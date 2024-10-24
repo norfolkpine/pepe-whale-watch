@@ -1,0 +1,82 @@
+{
+    "confirmed": true,
+    "chainId": "0x1",
+    "abi": [
+        {
+            "name": "Transfer",
+            "type": "event",
+            "anonymous": false,
+            "inputs": [
+                {
+                    "type": "address",
+                    "name": "from",
+                    "indexed": true
+                },
+                {
+                    "type": "address",
+                    "name": "to",
+                    "indexed": true
+                },
+                {
+                    "type": "uint256",
+                    "name": "value",
+                    "indexed": false
+                }
+            ]
+        }
+    ],
+    "streamId": "test",
+    "tag": "Duplicate of pepewhale",
+    "retries": 0,
+    "block": {
+        "number": "21033551",
+        "hash": "0xa8766204f4fae50d86d17fc56ad32db05652024f7926b4b6dfce6d1fb311e2c6",
+        "timestamp": "1729749923"
+    },
+    "logs": [
+        {
+            "logIndex": "78",
+            "transactionHash": "0x2c9c9512387aa1026c3fa27c328890321035be7efb507801276bb45e83182301",
+            "address": "0x6982508145454ce325ddbe47a25d4ec3d2311933",
+            "data": "0x000000000000000000000000000000000000000000a56fa5b99019a5c8000000",
+            "topic0": "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
+            "topic1": "0x000000000000000000000000c8c50166d47c775826299d85ac28030023dea837",
+            "topic2": "0x000000000000000000000000f89d7b9c864f589bbf53a82105107622b35eaa40",
+            "topic3": null,
+            "triggered_by": [
+                "0x6982508145454ce325ddbe47a25d4ec3d2311933"
+            ]
+        }
+    ],
+    "txs": [],
+    "txsInternal": [],
+    "erc20Transfers": [
+        {
+            "transactionHash": "0x2c9c9512387aa1026c3fa27c328890321035be7efb507801276bb45e83182301",
+            "logIndex": "78",
+            "contract": "0x6982508145454ce325ddbe47a25d4ec3d2311933",
+            "triggered_by": [
+                "0x6982508145454ce325ddbe47a25d4ec3d2311933"
+            ],
+            "from": "0xc8c50166d47c775826299d85ac28030023dea837",
+            "to": "0xf89d7b9c864f589bbf53a82105107622b35eaa40",
+            "value": "200000000000000000000000000",
+            "tokenName": "Pepe",
+            "tokenSymbol": "PEPE",
+            "tokenDecimals": "18",
+            "logo": "https://logo.moralis.io/0x1_0x6982508145454ce325ddbe47a25d4ec3d2311933_26fdbd9bd7014ce9b72656a59ba47626",
+            "thumbnail": "https://logo.moralis.io/0x1_0x6982508145454ce325ddbe47a25d4ec3d2311933_26fdbd9bd7014ce9b72656a59ba47626",
+            "possibleSpam": false,
+            "verifiedCollection": true,
+            "valueWithDecimals": "200000000"
+        }
+    ],
+    "erc20Approvals": [],
+    "nftTokenApprovals": [],
+    "nftApprovals": {
+        "ERC721": [],
+        "ERC1155": []
+    },
+    "nftTransfers": [],
+    "nativeBalances": []
+}
