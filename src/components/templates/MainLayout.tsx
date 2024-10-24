@@ -1,11 +1,11 @@
 import { Outlet } from 'react-router-dom';
-import { BaseContainer } from '../molecules/containers';
-import { logoColored, logoWhite } from '@/assets/images';
-import { LangSetting, ThemeSetting } from '../molecules/settings';
-import { useTheme } from '../molecules/providers';
+// import { BaseContainer } from '../molecules/containers';
+// import { logoColored, logoWhite } from '@/assets/images';
+// import { LangSetting, ThemeSetting } from '../molecules/settings';
+// import { useTheme } from '../molecules/providers';
 
 const MainLayout = () => {
-  const { theme } = useTheme();
+  // const { theme } = useTheme();
 
   return (
     <div className="min-h-screen">
