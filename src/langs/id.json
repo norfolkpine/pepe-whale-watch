@@ -1,0 +1,4 @@
+{
+  "headline": "Templat Proyek Vite + React + TS + Shadcn UI",
+  "author": "Dibuat dan dipelihara oleh {{ name }} sejak {{ year }}"
+}
