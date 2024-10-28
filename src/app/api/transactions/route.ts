@@ -1,7 +1,5 @@
-import { TransactionWebhookData } from '@/types/types';
 import { NextResponse } from 'next/server';
 
-// Store latest transactions in memory (or better, use Redis/DB in production)
 let latestTransactions: any = null;
 
 export async function GET() {
@@ -11,7 +9,6 @@ export async function GET() {
 export async function POST(request: Request) {
   try {
     const data = await request.json();
-    // Store the latest transactions
     latestTransactions = data;
     
     return NextResponse.json({ success: true });
