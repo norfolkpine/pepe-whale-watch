@@ -76,15 +76,3 @@ export async function POST(request: Request) {
     );
   }
 }
-
-// Optional: Cleanup function for when server restarts/closes
-export function cleanup() {
-  clients.forEach((controller) => {
-    try {
-      controller.close();
-    } catch (error) {
-      console.error('Error closing controller:', error);
-    }
-  });
-  clients.clear();
-}
