@@ -141,7 +141,13 @@ export default function Component() {
           yPosition: generateNewYPosition()
         }));
 
-        newTransactions.forEach(transaction => {
+        // Filter out duplicates based on transactionHash
+        const uniqueTransactions = newTransactions.filter(newTx => 
+          !whales.some(whale => whale.transactionHash === newTx.transactionHash) &&
+          !transactions.some(tx => tx.transactionHash === newTx.transactionHash)
+        );
+
+        uniqueTransactions.forEach(transaction => {
           setWhales(prevWhales => [...prevWhales, transaction]);
           setTransactions(prevTransactions => 
             [transaction, ...prevTransactions].slice(0, 10)
@@ -151,7 +157,7 @@ export default function Component() {
     } catch (error) {
       console.error('Error fetching transactions:', error);
     }
-  }, [generateNewYPosition]);
+  }, [generateNewYPosition, whales, transactions]);
 
   useEffect(() => {
     // Initial fetch
