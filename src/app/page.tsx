@@ -8,7 +8,7 @@ import { Transaction, TransactionWebhookData } from '@/types/types'
 import { PanelToggleButton } from '@/components/widgets/home/panel-toggle-button'
 import { TransactionPanel } from '@/components/ui/home/transaction-panel'
 import { WhaleComponent } from '@/components/widgets/home/whale-component'
-
+import { useTransactionStore } from '@/store/useTransactionStore'
 
 export default function Component() {
   const [whales, setWhales] = useState<Transaction[]>([])
@@ -98,7 +98,6 @@ export default function Component() {
       
       <TransactionPanel 
         isPanelOpen={isPanelOpen} 
-        transactions={transactions} 
       />
 
       <AnimatePresence>
