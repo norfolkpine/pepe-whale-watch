@@ -5,101 +5,17 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { Transaction, TransactionWebhookData } from '@/types/types'
+import { PanelToggleButton } from '@/components/widgets/home/panel-toggle-button'
+import { TransactionPanel } from '@/components/ui/home/transaction-panel'
+import { WhaleComponent } from '@/components/widgets/home/whale-component'
 
-
-const useAnimationProgress = (duration: number, delay: number = 0) => {
-  const [progress, setProgress] = useState(0)
-
-  useEffect(() => {
-    let rafId: number
-    let startTime: number
-
-    const animate = (timestamp: number) => {
-      if (!startTime) startTime = timestamp
-      const elapsed = timestamp - startTime - delay
-      const newProgress = Math.min(elapsed / duration, 1)
-      setProgress(newProgress)
-
-      if (newProgress < 1) {
-        rafId = requestAnimationFrame(animate)
-      }
-    }
-
-    rafId = requestAnimationFrame(animate)
-
-    return () => {
-      if (rafId) cancelAnimationFrame(rafId)
-    }
-  }, [duration, delay])
-
-  return progress
-}
-
-const WhaleComponent = ({ transaction, onComplete }: { transaction: Transaction; onComplete: () => void }) => {
-  const progress = useAnimationProgress(15000) // 15 seconds duration
-  
-  const minSize = 80
-  const maxSize = 400 
-  const minAmount = 100000 
-  const maxAmount = 10000000 
-  
-  const whaleSize = Math.min(
-    Math.max(
-      minSize + ((transaction.amount - minAmount) / (maxAmount - minAmount)) * (maxSize - minSize),
-      minSize
-    ),
-    maxSize
-  )
-
-  useEffect(() => {
-    if (progress === 1) {
-      onComplete()
-    }
-  }, [progress, onComplete])
-
-  return (
-    <motion.div
-      style={{
-        position: 'absolute',
-        left: `${progress * 120 - 10}%`, // Start slightly off-screen left and end slightly off-screen right
-        top: `${transaction.yPosition}%`,
-        transform: 'translate(-50%, -50%)',
-      }}
-    >
-      <TooltipProvider>
-        <Tooltip delayDuration={0}>
-          <TooltipTrigger asChild>
-            <img
-              src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/pepe%20whale-tCYY02MMoyjV58qO5P8g79M4JICxWM.png"
-              alt="Pepe Whale"
-              style={{
-                width: `${whaleSize}px`,
-                height: 'auto',
-                transform: 'scaleX(1)', // No horizontal flip
-              }}
-            />
-          </TooltipTrigger>
-          <TooltipContent 
-            side="top" 
-            align="start" 
-            sideOffset={5}
-          >
-            <p>Amount: {transaction.amount.toLocaleString()} {transaction.tokenSymbol}</p>
-            <p>From: {transaction.sender.slice(0, 6)}...{transaction.sender.slice(-4)}</p>
-            <p>To: {transaction.receiver.slice(0, 6)}...{transaction.receiver.slice(-4)}</p>
-            <p>Token: {transaction.tokenName}</p>
-          </TooltipContent>
-        </Tooltip>
-      </TooltipProvider>
-    </motion.div>
-  )
-}
 
 export default function Component() {
   const [whales, setWhales] = useState<Transaction[]>([])
   const [transactions, setTransactions] = useState<Transaction[]>([])
   const lastYPosition = useRef(10)
   const pollingInterval = 5000 // 5 seconds
+  const [isPanelOpen, setIsPanelOpen] = useState(false)
 
   const removeWhale = useCallback((id: number) => {
     setWhales(prevWhales => prevWhales.filter(whale => whale.id !== id))
@@ -160,13 +76,10 @@ export default function Component() {
   }, [generateNewYPosition, whales, transactions]);
 
   useEffect(() => {
-    // Initial fetch
     fetchTransactions();
 
-    // Set up polling
     const intervalId = setInterval(fetchTransactions, pollingInterval);
 
-    // Cleanup
     return () => {
       clearInterval(intervalId);
     };
@@ -177,7 +90,17 @@ export default function Component() {
       <h1 className="absolute top-4 left-1/2 transform -translate-x-1/2 text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold text-white z-20 text-center px-4">
         $PEPE Whale Alerts
       </h1>
+
+      <PanelToggleButton 
+        isPanelOpen={isPanelOpen} 
+        onToggle={() => setIsPanelOpen(!isPanelOpen)} 
+      />
       
+      <TransactionPanel 
+        isPanelOpen={isPanelOpen} 
+        transactions={transactions} 
+      />
+
       <AnimatePresence>
         {whales.map((whale) => (
           <WhaleComponent
