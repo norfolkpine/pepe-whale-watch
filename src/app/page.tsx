@@ -4,18 +4,8 @@ import { useState, useCallback, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
+import { Transaction, TransactionWebhookData } from '@/types/types'
 
-interface Transaction {
-  id: number;
-  amount: number;
-  timestamp: Date;
-  sender: string;
-  receiver: string;
-  tokenName: string;
-  tokenSymbol: string;
-  transactionHash: string;
-  yPosition: number;
-}
 
 const useAnimationProgress = (duration: number, delay: number = 0) => {
   const [progress, setProgress] = useState(0)
@@ -124,44 +114,79 @@ export default function Component() {
     return newY
   }, [])
 
-  // Add this inside your useEffect
-  const connectSSE = () => {
-    const eventSource = new EventSource('/api/transactions');
+  const connectSSE = useCallback(() => {
+    let isConnected = false;
+    const eventSource = new EventSource('/api/transactions', {
+      withCredentials: true
+    });
 
-    eventSource.onmessage = (event) => {
-      const newTransactions: Transaction[] = JSON.parse(event.data);
-      
-      newTransactions.forEach(transaction => {
-        // Add yPosition to the transaction
-        const transactionWithY = {
-          ...transaction,
-          yPosition: generateNewYPosition(),
-        };
+    const handleOpen = () => {
+      console.log('SSE Connection established');
+      isConnected = true;
+    };
 
-        // Update whales
-        setWhales(prevWhales => [...prevWhales, transactionWithY]);
+    const handleError = (error: Event) => {
+      console.warn('SSE Connection Error:', error);
+      if (isConnected) {
+        // Only attempt reconnect if we were previously connected
+        isConnected = false;
+        eventSource.close();
+        setTimeout(connectSSE, 1000);
+      }
+    };
+
+    const handleMessage = (event: MessageEvent) => {
+      try {
+        const data = JSON.parse(event.data);
+        if (data.connected) {
+          console.log('Initial connection established');
+          return;
+        }
+
+        const webhookData = data as TransactionWebhookData;
         
-        // Update transaction history
-        setTransactions(prevTransactions => 
-          [transactionWithY, ...prevTransactions].slice(0, 10)
-        );
-      });
+        // Process each ERC20 transfer as a transaction
+        const newTransactions: Transaction[] = webhookData.erc20Transfers.map((transfer, index) => ({
+          id: Date.now() + index, // Generate unique ID
+          amount: parseFloat(transfer.valueWithDecimals),
+          timestamp: new Date(parseInt(webhookData.block.timestamp) * 1000),
+          sender: transfer.from,
+          receiver: transfer.to,
+          tokenName: transfer.tokenName,
+          tokenSymbol: transfer.tokenSymbol,
+          transactionHash: transfer.transactionHash,
+          yPosition: generateNewYPosition()
+        }));
+
+        // Add each transaction to state
+        newTransactions.forEach(transaction => {
+          setWhales(prevWhales => [...prevWhales, transaction]);
+          setTransactions(prevTransactions => 
+            [transaction, ...prevTransactions].slice(0, 10)
+          );
+        });
+
+      } catch (error) {
+        console.error('Error processing message:', error);
+      }
     };
 
-    eventSource.onerror = (error) => {
-      console.error('SSE Error:', error);
+    eventSource.addEventListener('open', handleOpen);
+    eventSource.addEventListener('message', handleMessage);
+    eventSource.addEventListener('error', handleError);
+
+    return () => {
+      isConnected = false;
       eventSource.close();
-      // Attempt to reconnect after 5 seconds
-      setTimeout(connectSSE, 5000);
     };
-
-    return eventSource;
-  };
+  }, []);
 
   useEffect(() => {
-    const eventSource = connectSSE();
-    return () => eventSource.close();
-  }, [generateNewYPosition]);
+    const cleanup = connectSSE();
+    return () => {
+      cleanup();
+    };
+  }, [connectSSE]);
 
   return (
     <div className="relative w-full h-screen overflow-hidden bg-gradient-to-b from-blue-200 to-blue-400">

@@ -22,13 +22,13 @@ export interface TransactionWebhookData {
 }
 
 export interface Transaction {
-	id: number;
-	amount: number;
-	timestamp: Date;
-	sender: string;
-	receiver: string;
-	tokenName: string;
-	tokenSymbol: string;
-	transactionHash: string;
-	yPosition: number;
-  }
+  id: number;
+  amount: number;
+  timestamp: Date;
+  sender: string;
+  receiver: string;
+  tokenName: string;
+  tokenSymbol: string;
+  transactionHash: string;
+  yPosition: number;
+}
