@@ -174,7 +174,7 @@ export default function Component() {
 
   return (
     <div className="relative w-full h-screen overflow-hidden bg-gradient-to-b from-blue-200 to-blue-400">
-      <h1 className="absolute top-4 left-1/2 transform -translate-x-1/2 text-4xl font-bold text-white z-20 shadow-lg">
+      <h1 className="absolute top-4 left-1/2 transform -translate-x-1/2 text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold text-white z-20 text-center px-4">
         $PEPE Whale Alerts
       </h1>
       
@@ -191,7 +191,7 @@ export default function Component() {
       <div className="absolute bottom-4 left-4 right-4 max-w-4xl mx-auto bg-white bg-opacity-80 rounded-lg p-2 overflow-x-auto">
         <Table className="w-full text-xs">
           <TableHeader>
-            <TableRow>
+            <TableRow className='border-none'>
               <TableHead className="py-1">Amount</TableHead>
               <TableHead className="py-1">Token</TableHead>
               <TableHead className="py-1">From</TableHead>
@@ -203,12 +203,12 @@ export default function Component() {
           <TableBody>
             {transactions.map((transaction) => (
               <TableRow key={transaction.id}>
-                <TableCell className="py-1">{transaction.amount.toLocaleString()} {transaction.tokenSymbol}</TableCell>
-                <TableCell className="py-1">{transaction.tokenName}</TableCell>
-                <TableCell className="py-1">{transaction.sender.slice(0, 6)}...{transaction.sender.slice(-4)}</TableCell>
-                <TableCell className="py-1">{transaction.receiver.slice(0, 6)}...{transaction.receiver.slice(-4)}</TableCell>
-                <TableCell className="py-1">{transaction.timestamp.toLocaleString()}</TableCell>
-                <TableCell className="py-1">
+                <TableCell className="py-1 text-black">{transaction.amount.toLocaleString()} {transaction.tokenSymbol}</TableCell>
+                <TableCell className="py-1 text-black">{transaction.tokenName}</TableCell>
+                <TableCell className="py-1 text-black">{transaction.sender.slice(0, 6)}...{transaction.sender.slice(-4)}</TableCell>
+                <TableCell className="py-1 text-black">{transaction.receiver.slice(0, 6)}...{transaction.receiver.slice(-4)}</TableCell>
+                <TableCell className="py-1 text-black">{transaction.timestamp.toLocaleString()}</TableCell>
+                <TableCell className="py-1 text-black">
                   <a href={`https://etherscan.io/tx/${transaction.transactionHash}`} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
                     {transaction.transactionHash.slice(0, 6)}...{transaction.transactionHash.slice(-4)}
                   </a>
