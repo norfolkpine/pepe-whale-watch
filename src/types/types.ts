@@ -20,3 +20,15 @@ export interface TransactionWebhookData {
 	}
 	erc20Transfers: ERC20Transfer[]
 }
+
+export interface Transaction {
+	id: number;
+	amount: number;
+	timestamp: Date;
+	sender: string;
+	receiver: string;
+	tokenName: string;
+	tokenSymbol: string;
+	transactionHash: string;
+	yPosition: number;
+  }
