@@ -1,12 +1,15 @@
-build
-coverege
-dist
-package-lock.json
-pnpm-lock.yaml
-node_modules
-**/.next/**
-**/_next/**
-**/dist/**
-**/__tmp__/**
-lerna.json
-.github
+# Ignore everything
+/*
+
+# Except these files & folders
+!/src
+!index.html
+!package.json
+!tsconfig.json
+!tsconfig.node.json
+!vite.config.ts
+!.prettierrc
+!README.md
+!CHANGELOG.md
+!.eslintrc.cjs
+!postcss.config.js

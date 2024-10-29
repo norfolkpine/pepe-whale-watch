@@ -7,7 +7,6 @@ import { SpeedInsights } from "@vercel/speed-insights/next"
 import { siteConfig } from "@/config/site"
 
 import "./globals.css"
-import Moralis from "moralis"
 
 const inter = Inter({ subsets: ["latin"] })
 

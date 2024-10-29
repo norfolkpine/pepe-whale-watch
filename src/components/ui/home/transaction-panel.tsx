@@ -45,17 +45,17 @@ export function TransactionPanel({ isPanelOpen }: TransactionPanelProps) {
               <TableBody>
                 {transactions.map((transaction) => (
                   <TableRow key={transaction.id} className="hover:bg-gray-50">
-                    <TableCell className="py-1 text-black">
+                    <TableCell className="py-2 text-black">
                       {transaction.amount.toLocaleString()} {transaction.tokenSymbol}
                     </TableCell>
                     <TableCell 
-                      className="py-1 text-black cursor-pointer hover:text-blue-500"
+                      className="py-2 text-black cursor-pointer hover:text-blue-500"
                       onClick={() => handleAddressClick(transaction.sender)}
                     >
                       {transaction.sender.slice(0, 16)}...
                     </TableCell>
                     <TableCell 
-                      className="py-1 text-black cursor-pointer hover:text-blue-500"
+                      className="py-2 text-black cursor-pointer hover:text-blue-500"
                       onClick={() => handleAddressClick(transaction.receiver)}
                     >
                       {transaction.receiver.slice(0, 16)}...
