@@ -2,18 +2,11 @@
 
 import { useState, useCallback, useEffect, useRef } from 'react'
 import { AnimatePresence } from 'framer-motion'
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table'
 import { Transaction, TransactionWebhookData } from '@/types/types'
 import { PanelToggleButton } from '@/components/widgets/home/panel-toggle-button'
 import { TransactionPanel } from '@/components/ui/home/transaction-panel'
 import { WhaleComponent } from '@/components/widgets/home/whale-component'
+import TransactionTable from '@/components/widgets/home/transaction-table'
 
 export default function Component() {
   const [whales, setWhales] = useState<Transaction[]>([])
@@ -65,7 +58,8 @@ export default function Component() {
         )
 
         // Filter out duplicates based on transactionHash
-        const uniqueTransactions = newTransactions.filter(
+        const uniqueTransactions = newTransactions
+        .filter(
           (newTx) =>
             !whales.some(
               (whale) => whale.transactionHash === newTx.transactionHash
@@ -111,7 +105,7 @@ export default function Component() {
       <TransactionPanel isPanelOpen={isPanelOpen} />
 
       <AnimatePresence>
-        {whales.map((whale) => (
+      {whales.map((whale) => (
           <WhaleComponent
             key={whale.id}
             transaction={whale}
@@ -120,55 +114,7 @@ export default function Component() {
         ))}
       </AnimatePresence>
 
-      <div className='absolute bottom-4 left-4 right-4 mx-auto max-w-4xl overflow-x-auto rounded-lg bg-white bg-opacity-80 p-2'>
-        <Table className='w-full text-xs'>
-          <TableHeader>
-            <TableRow className='border-none'>
-              <TableHead className='py-1'>Amount</TableHead>
-              <TableHead className='py-1'>Token</TableHead>
-              <TableHead className='py-1'>From</TableHead>
-              <TableHead className='py-1'>To</TableHead>
-              <TableHead className='py-1'>Time</TableHead>
-              <TableHead className='py-1'>Tx Hash</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {transactions.map((transaction) => (
-              <TableRow key={transaction.id}>
-                <TableCell className='py-1 text-black'>
-                  {transaction.amount.toLocaleString()}{' '}
-                  {transaction.tokenSymbol}
-                </TableCell>
-                <TableCell className='py-1 text-black'>
-                  {transaction.tokenName}
-                </TableCell>
-                <TableCell className='py-1 text-black'>
-                  {transaction.sender.slice(0, 6)}...
-                  {transaction.sender.slice(-4)}
-                </TableCell>
-                <TableCell className='py-1 text-black'>
-                  {transaction.receiver.slice(0, 6)}...
-                  {transaction.receiver.slice(-4)}
-                </TableCell>
-                <TableCell className='py-1 text-black'>
-                  {transaction.timestamp.toLocaleString()}
-                </TableCell>
-                <TableCell className='py-1 text-black'>
-                  <a
-                    href={`https://etherscan.io/tx/${transaction.transactionHash}`}
-                    target='_blank'
-                    rel='noopener noreferrer'
-                    className='text-blue-600 hover:underline'
-                  >
-                    {transaction.transactionHash.slice(0, 6)}...
-                    {transaction.transactionHash.slice(-4)}
-                  </a>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </div>
+      <TransactionTable transactions={transactions} />
     </div>
   )
 }

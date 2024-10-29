@@ -1,8 +1,6 @@
-import { useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { Transaction } from '@/types/types'
-import { useAnimationProgress } from '@/hooks/useAnimationProgress'
 
 interface WhaleComponentProps {
   transaction: Transaction
@@ -10,7 +8,6 @@ interface WhaleComponentProps {
 }
 
 export const WhaleComponent = ({ transaction, onComplete }: WhaleComponentProps) => {
-  const progress = useAnimationProgress(15000) // 15 seconds duration
   
   const minSize = 80
   const maxSize = 400 
@@ -25,20 +22,24 @@ export const WhaleComponent = ({ transaction, onComplete }: WhaleComponentProps)
     maxSize
   )
 
-  useEffect(() => {
-    if (progress === 1) {
-      onComplete()
-    }
-  }, [progress, onComplete])
+  const initialX = `-${whaleSize + 50}px` 
+  const finalX = `calc(100vw + ${whaleSize + 50}px)` 
 
   return (
     <motion.div
+      initial={{ x: initialX }}
+      animate={{ x: finalX }}
+      transition={{
+        duration: 15,
+        ease: "linear",
+        repeat: 0
+      }}
       style={{
         position: 'absolute',
-        left: `${progress * 120 - 10}%`,
         top: `${transaction.yPosition}%`,
-        transform: 'translate(-50%, -50%)',
+        transform: 'translate(0, -50%)', 
       }}
+      onAnimationComplete={onComplete}
     >
       <TooltipProvider>
         <Tooltip delayDuration={0}>
