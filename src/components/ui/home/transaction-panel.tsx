@@ -48,28 +48,28 @@ export function TransactionPanel({ isPanelOpen }: TransactionPanelProps) {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {transactions.map((transaction) => (
+                {transactions.map((transaction, index) => (
                   <TableRow 
-                    key={`${transaction.id}-${transaction.sender}-${transaction.receiver}`} 
+                    key={`${transaction.from_address}-${transaction.to_address}-${index}`} 
                     className="hover:bg-gray-50"
                   >
                     <TableCell className="py-2 text-black">
-                      {transaction.amount.toLocaleString().split(",")[0]} {transaction.tokenSymbol}
+                      {transaction.value_decimal.toLocaleString().split(",")[0]} {transaction.token_symbol}
                     </TableCell>
                     <TableCell 
                       className="py-2 text-black cursor-pointer hover:text-blue-500 underline"
-                      onClick={() => handleAddressClick(transaction.sender)}
+                      onClick={() => handleAddressClick(transaction.from_address)}
                     >
-                      {transaction.sender.slice(0, 6)}...{transaction.sender.slice(-4)}
+                      {transaction.from_address.slice(0, 6)}...{transaction.from_address.slice(-4)}
                     </TableCell>
                     <TableCell 
                       className="py-2 text-black cursor-pointer hover:text-blue-500 underline"
-                      onClick={() => handleAddressClick(transaction.receiver)}
+                      onClick={() => handleAddressClick(transaction.to_address)}
                     >
-                      {transaction.receiver.slice(0, 6)}...{transaction.receiver.slice(-4)}
+                      {transaction.to_address.slice(0, 6)}...{transaction.to_address.slice(-4)}
                     </TableCell>
-                    <TableCell className="py-2 text-black hover:text-blue-500 underline" onClick={() => handleTxClick(transaction.transactionHash)} >
-                      {transaction.transactionHash.slice(0, 6)}...{transaction.transactionHash.slice(-4)}
+                    <TableCell className="py-2 text-black hover:text-blue-500 underline" onClick={() => handleTxClick(transaction.transaction_hash)} >
+                      {transaction.transaction_hash.slice(0, 6)}...{transaction.transaction_hash.slice(-4)}
                     </TableCell>
                   </TableRow>
                 ))}
