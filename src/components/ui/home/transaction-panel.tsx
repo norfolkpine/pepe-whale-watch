@@ -18,6 +18,10 @@ export function TransactionPanel({ isPanelOpen }: TransactionPanelProps) {
     window.open(`https://etherscan.io/address/${address}`, '_blank');
   };
 
+  const handleTxClick = (txHash: string) => {
+    window.open(`https://etherscan.io/tx/${txHash}`, '_blank');
+  };
+
   return (
     <div
       className={`fixed right-0 top-0 h-full w-[600px] bg-white shadow-lg transform transition-transform duration-300 ease-in-out z-20 ${
@@ -25,7 +29,7 @@ export function TransactionPanel({ isPanelOpen }: TransactionPanelProps) {
       }`}
     >
       <div className="p-4 h-full overflow-y-auto">
-        <h2 className="text-lg font-semibold mb-4">Transaction History</h2>
+        <h2 className="text-lg font-semibold mb-1">Transaction History</h2>
         {isLoading ? (
           <div className="flex justify-center items-center h-40">
             <Loader2 className="h-6 w-6 animate-spin" />
@@ -37,9 +41,10 @@ export function TransactionPanel({ isPanelOpen }: TransactionPanelProps) {
             <Table className="w-full text-xs">
               <TableHeader>
                 <TableRow className='border-none'>
-                  <TableHead className="py-1">Amount</TableHead>
-                  <TableHead className="py-1">From</TableHead>
-                  <TableHead className="py-1">To</TableHead>
+                  <TableHead className="py-1 h-8">Amount</TableHead>
+                  <TableHead className="py-1 h-8">From</TableHead>
+                  <TableHead className="py-1 h-8">To</TableHead>
+                  <TableHead className="py-1 h-8">Tx Hash</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -49,19 +54,22 @@ export function TransactionPanel({ isPanelOpen }: TransactionPanelProps) {
                     className="hover:bg-gray-50"
                   >
                     <TableCell className="py-2 text-black">
-                      {transaction.amount} {transaction.tokenSymbol}
+                      {transaction.amount.toLocaleString().split(",")[0]} {transaction.tokenSymbol}
                     </TableCell>
                     <TableCell 
-                      className="py-2 text-black cursor-pointer hover:text-blue-500"
+                      className="py-2 text-black cursor-pointer hover:text-blue-500 underline"
                       onClick={() => handleAddressClick(transaction.sender)}
                     >
-                      {transaction.sender.slice(0, 16)}...
+                      {transaction.sender.slice(0, 6)}...{transaction.sender.slice(-4)}
                     </TableCell>
                     <TableCell 
-                      className="py-2 text-black cursor-pointer hover:text-blue-500"
+                      className="py-2 text-black cursor-pointer hover:text-blue-500 underline"
                       onClick={() => handleAddressClick(transaction.receiver)}
                     >
-                      {transaction.receiver.slice(0, 16)}...
+                      {transaction.receiver.slice(0, 6)}...{transaction.receiver.slice(-4)}
+                    </TableCell>
+                    <TableCell className="py-2 text-black hover:text-blue-500 underline" onClick={() => handleTxClick(transaction.transactionHash)} >
+                      {transaction.transactionHash.slice(0, 6)}...{transaction.transactionHash.slice(-4)}
                     </TableCell>
                   </TableRow>
                 ))}

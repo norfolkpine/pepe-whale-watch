@@ -6,6 +6,15 @@ import { ChevronUp, ChevronDown } from "lucide-react";
 export default function TransactionTable({ transactions }: { transactions: Transaction[] }) {
     const [isMinimized, setIsMinimized] = useState(false);
 
+    const handleAddressClick = (address: string) => {
+        window.open(`https://etherscan.io/address/${address}`, '_blank');
+      };
+    
+      const handleTxClick = (txHash: string) => {
+        window.open(`https://etherscan.io/tx/${txHash}`, '_blank');
+      };
+    
+
     return (
         <div className='absolute bottom-4 left-4 right-4 mx-auto max-w-4xl overflow-x-auto rounded-lg bg-white bg-opacity-80 p-2'>
             <div className="flex justify-between items-center mb-2">
@@ -36,7 +45,7 @@ export default function TransactionTable({ transactions }: { transactions: Trans
                         .map((transaction) => (
                             <TableRow key={transaction.id}>
                                 <TableCell className='py-1 text-black'>
-                                    {transaction.amount}{' '}
+                                    {transaction.amount.toLocaleString().split(",")[0]}{' '}
                                     {transaction.tokenSymbol}
                                 </TableCell>
                                 <TableCell className='py-1 text-black'>
@@ -45,11 +54,11 @@ export default function TransactionTable({ transactions }: { transactions: Trans
                                 <TableCell className='py-1 text-black'>
                                     {transaction.tokenName}
                                 </TableCell>
-                                <TableCell className='py-1 text-black'>
+                                <TableCell className='py-1 text-black hover:text-blue-600 underline' onClick={() => handleAddressClick(transaction.sender)}>
                                     {transaction.sender.slice(0, 6)}...
                                     {transaction.sender.slice(-4)}
                                 </TableCell>
-                                <TableCell className='py-1 text-black'>
+                                <TableCell className='py-1 text-black hover:text-blue-600 underline' onClick={() => handleAddressClick(transaction.receiver)}>
                                     {transaction.receiver.slice(0, 6)}...
                                     {transaction.receiver.slice(-4)}
                                 </TableCell>
@@ -61,7 +70,7 @@ export default function TransactionTable({ transactions }: { transactions: Trans
                                         href={`https://etherscan.io/tx/${transaction.transactionHash}`}
                                         target='_blank'
                                         rel='noopener noreferrer'
-                                        className='text-blue-600 hover:underline'
+                                        className='hover:text-blue-600 underline'
                                     >
                                         {transaction.transactionHash.slice(0, 6)}...
                                         {transaction.transactionHash.slice(-4)}
