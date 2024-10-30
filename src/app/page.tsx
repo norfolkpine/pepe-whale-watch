@@ -2,30 +2,13 @@
 
 import { useState, useCallback, useEffect, useRef } from 'react'
 import { AnimatePresence } from 'framer-motion'
-import { Transaction, TransactionWebhookData } from '@/types/types'
+import { Transaction } from '@/types/types'
 import { PanelToggleButton } from '@/components/widgets/home/panel-toggle-button'
 import { TransactionPanel } from '@/components/ui/home/transaction-panel'
 import { WhaleComponent } from '@/components/widgets/home/whale-component'
 import TransactionTable from '@/components/widgets/home/transaction-table'
 import { usePriceStore } from '@/store/usePriceStore'
-
-async function* streamingFetch() {
-  const response = await fetch('/api/transactions')
-  const reader = response.body!.getReader()
-  const decoder = new TextDecoder('utf-8')
-
-  while (true) {
-    const { done, value } = await reader.read()
-    if (done) break
-
-    try {
-      const decodedValue = decoder.decode(value)
-      yield JSON.parse(decodedValue)
-    } catch (e) {
-      console.warn('Error parsing chunk:', e)
-    }
-  }
-}
+import { useSSE } from '@/hooks/useSSE'
 
 export default function Component() {
   const [whales, setWhales] = useState<Transaction[]>([])
@@ -33,10 +16,12 @@ export default function Component() {
   const lastYPosition = useRef(10)
   const [isPanelOpen, setIsPanelOpen] = useState(false)
   const fetchPrice = usePriceStore((state) => state.fetchPrice)
+  const loadingPrice = usePriceStore((state) => state.isLoading)
   const prices = usePriceStore((state) => state.prices)
-  const delayCallPrice = 5 * 60 * 1000 // 5 minutes in milliseconds
-
+  const delayCallPrice = 5 * 60 * 1000
   const tokenAddress = '0x6982508145454ce325ddbe47a25d4ec3d2311933'
+
+  const connectSSE = useSSE('/api/transactions')
 
   const removeWhale = useCallback((id: number) => {
     setWhales((prevWhales) => prevWhales.filter((whale) => whale.id !== id))
@@ -52,131 +37,86 @@ export default function Component() {
     return newY
   }, [])
 
-  const fetchTransactionsRef = useCallback(async () => {
-    try {
-      const stream = streamingFetch()
+  const processTransactions = useCallback((webhookData: any) => {
+    if (webhookData.erc20Transfers && webhookData.erc20Transfers.length > 0) {
+      const tokenPrice = prices[tokenAddress] || 0
+      
+      const newTransactions: Transaction[] = webhookData.erc20Transfers.map(
+        (transfer: any, index: number) => ({
+          id: Date.now() + index,
+          amount: parseFloat(transfer.valueWithDecimals),
+          usdValue: tokenPrice * parseFloat(transfer.valueWithDecimals),
+          timestamp: new Date(parseInt(webhookData.block.timestamp) * 1000),
+          sender: transfer.from,
+          receiver: transfer.to,
+          tokenName: transfer.tokenName,
+          tokenSymbol: transfer.tokenSymbol,
+          transactionHash: transfer.transactionHash,
+          contractAddress: transfer.contractAddress,
+          yPosition: generateNewYPosition(),
+        })
+      )
 
-      for await (const webhookData of stream) {
-        if (
-          webhookData.erc20Transfers &&
-          webhookData.erc20Transfers.length > 0
-        ) {
-          const tokenPrice = prices[tokenAddress] || 0
-         
-          const newTransactions: Transaction[] = webhookData.erc20Transfers.map(
-            (transfer: any, index: number) => ({
-              id: Date.now() + index,
-              amount: parseFloat(transfer.valueWithDecimals),
-              usdValue: tokenPrice * parseFloat(transfer.valueWithDecimals),
-              timestamp: new Date(parseInt(webhookData.block.timestamp) * 1000),
-              sender: transfer.from,
-              receiver: transfer.to,
-              tokenName: transfer.tokenName,
-              tokenSymbol: transfer.tokenSymbol,
-              transactionHash: transfer.transactionHash,
-              contractAddress: transfer.contractAddress,
-              yPosition: generateNewYPosition(),
-            })
-          )
+      const uniqueTransactions = newTransactions.filter((newTx) => {
+        const isDuplicate =
+          whales.some((whale) => whale.transactionHash === newTx.transactionHash) ||
+          transactions.some((tx) => tx.transactionHash === newTx.transactionHash)
+        return !isDuplicate
+      })
 
-          const uniqueTransactions = newTransactions.filter((newTx) => {
-            const isDuplicate =
-              whales.some(
-                (whale) => whale.transactionHash === newTx.transactionHash
-              ) ||
-              transactions.some(
-                (tx) => tx.transactionHash === newTx.transactionHash
-              )
-            return !isDuplicate
-          })
-
-          if (uniqueTransactions.length > 0) {
-            try {
-              
-
-              setWhales((prevWhales) => {
-                const newWhales = [...prevWhales]
-                uniqueTransactions.forEach((tx) => {
-                  if (
-                    !newWhales.some(
-                      (whale) => whale.transactionHash === tx.transactionHash
-                    )
-                  ) {
-                    newWhales.push(tx)
-                  }
-                })
-                return newWhales
-              })
-
-              setTransactions((prevTransactions) => {
-                const newTransactions = [
-                  ...uniqueTransactions,
-                  ...prevTransactions,
-                ]
-                const uniqueTransactionsMapped = Array.from(
-                  new Map(
-                    newTransactions.map((tx) => [tx.transactionHash, tx])
-                  ).values()
-                )
-                return uniqueTransactionsMapped.slice(0, 10)
-              })
-            } catch (error) {
-              setWhales((prevWhales) => {
-                const newWhales = [...prevWhales]
-                uniqueTransactions.forEach((tx) => {
-                  if (
-                    !newWhales.some(
-                      (whale) => whale.transactionHash === tx.transactionHash
-                    )
-                  ) {
-                    newWhales.push(tx)
-                  }
-                })
-                return newWhales
-              })
-
-              setTransactions((prevTransactions) => {
-                const newTransactions = [
-                  ...uniqueTransactions,
-                  ...prevTransactions,
-                ]
-                const uniqueTransactio = Array.from(
-                  new Map(
-                    newTransactions.map((tx) => [tx.transactionHash, tx])
-                  ).values()
-                )
-                return uniqueTransactio.slice(0, 10)
-              })
+      if (uniqueTransactions.length > 0) {
+        setWhales((prevWhales) => {
+          const newWhales = [...prevWhales]
+          uniqueTransactions.forEach((tx) => {
+            if (!newWhales.some((whale) => whale.transactionHash === tx.transactionHash)) {
+              newWhales.push(tx)
             }
-          }
-        }
+          })
+          return newWhales
+        })
+
+        setTransactions((prevTransactions) => {
+          const newTransactions = [...uniqueTransactions, ...prevTransactions]
+          const uniqueTransactionsMapped = Array.from(
+            new Map(newTransactions.map((tx) => [tx.transactionHash, tx])).values()
+          )
+          return uniqueTransactionsMapped.slice(0, 10)
+        })
       }
-    } catch (error) {
-      console.error('Error fetching transactions:', error)
     }
-  }, [prices])
+  }, [prices, tokenAddress, whales, transactions, generateNewYPosition])
 
   useEffect(() => {
-    fetchPrice(tokenAddress)
-
-    const intervalId = setInterval(() => {
-      fetchPrice(tokenAddress)
-    }, delayCallPrice) 
-
-    return () => clearInterval(intervalId)
-  }, [fetchPrice, delayCallPrice])
+    fetchPrice(tokenAddress);
+  }, [fetchPrice])
 
   useEffect(() => {
-    const controller = new AbortController()
+   if(prices[tokenAddress]){
+    const sse = connectSSE();
 
-    if (prices[tokenAddress]) {
-      fetchTransactionsRef()
-    }
+    sse.onmessage = (event) => {
+      try {
+        const data = event.data;
+        if (data.startsWith('{') && data.endsWith('}')) {
+          const webhookData = JSON.parse(data);
+          processTransactions(webhookData);
+        }
+      } catch (error) {
+        console.error('Error processing SSE message:', error);
+      }
+    };
+
+    
+    const priceInterval = setInterval(() => {
+      fetchPrice(tokenAddress);
+    }, delayCallPrice);
 
     return () => {
-      controller.abort()
+      clearInterval(priceInterval);
+      sse.close();
+    };
     }
-  }, [prices, fetchTransactionsRef])
+  }, [connectSSE, fetchPrice, delayCallPrice, processTransactions, prices]);
 
   return (
     <div className='relative h-screen w-full overflow-hidden bg-gradient-to-b from-blue-200 to-blue-400'>
