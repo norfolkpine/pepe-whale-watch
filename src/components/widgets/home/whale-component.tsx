@@ -11,12 +11,13 @@ export const WhaleComponent = ({ transaction, onComplete }: WhaleComponentProps)
   
   const minSize = 80
   const maxSize = 400 
-  const minAmount = 100000 
-  const maxAmount = 10000000 
+  const minUsdAmount = 1000 
+  const maxUsdAmount = 270000 
+  const duration = 20
   
   const whaleSize = Math.min(
     Math.max(
-      minSize + ((transaction.amount - minAmount) / (maxAmount - minAmount)) * (maxSize - minSize),
+      minSize + ((transaction.usdValue - minUsdAmount) / (maxUsdAmount - minUsdAmount)) * (maxSize - minSize),
       minSize
     ),
     maxSize
@@ -30,7 +31,7 @@ export const WhaleComponent = ({ transaction, onComplete }: WhaleComponentProps)
       initial={{ x: initialX }}
       animate={{ x: finalX }}
       transition={{
-        duration: 15,
+        duration: duration,
         ease: "linear",
         repeat: 0
       }}

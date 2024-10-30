@@ -22,6 +22,7 @@ export default function TransactionTable({ transactions }: { transactions: Trans
                 <TableHeader>
                     <TableRow className='border-none'>
                         <TableHead className='py-1 h-8'>Amount</TableHead>
+                        <TableHead className='py-1 h-8'>USD Value</TableHead>
                         <TableHead className='py-1 h-8'>Token</TableHead>
                         <TableHead className='py-1 h-8'>From</TableHead>
                         <TableHead className='py-1 h-8'>To</TableHead>
@@ -35,8 +36,11 @@ export default function TransactionTable({ transactions }: { transactions: Trans
                         .map((transaction) => (
                             <TableRow key={transaction.id}>
                                 <TableCell className='py-1 text-black'>
-                                    {transaction.amount.toLocaleString()}{' '}
+                                    {transaction.amount}{' '}
                                     {transaction.tokenSymbol}
+                                </TableCell>
+                                <TableCell className='py-1 text-black'>
+                                    ${transaction.usdValue.toLocaleString()}
                                 </TableCell>
                                 <TableCell className='py-1 text-black'>
                                     {transaction.tokenName}

@@ -7,6 +7,7 @@ import { SpeedInsights } from "@vercel/speed-insights/next"
 import { siteConfig } from "@/config/site"
 
 import "./globals.css"
+import React from "react"
 
 const inter = Inter({ subsets: ["latin"] })
 
@@ -23,12 +24,14 @@ export default function RootLayout({
 	return (
 		<html lang="en">
 			<body className={inter.className}>
-				<Providers>
-					{/* <Header /> */}
+				<React.StrictMode>
+					<Providers>
+						{/* <Header /> */}
 
 					<main className="flex flex-col">{children}</main>
 					<SpeedInsights />
-				</Providers>
+					</Providers>
+				</React.StrictMode>
 			</body>
 		</html>
 	)

@@ -7,13 +7,36 @@ import { PanelToggleButton } from '@/components/widgets/home/panel-toggle-button
 import { TransactionPanel } from '@/components/ui/home/transaction-panel'
 import { WhaleComponent } from '@/components/widgets/home/whale-component'
 import TransactionTable from '@/components/widgets/home/transaction-table'
+import { usePriceStore } from '@/store/usePriceStore'
+
+async function* streamingFetch() {
+  const response = await fetch('/api/transactions')
+  const reader = response.body!.getReader()
+  const decoder = new TextDecoder('utf-8')
+
+  while (true) {
+    const { done, value } = await reader.read()
+    if (done) break
+
+    try {
+      const decodedValue = decoder.decode(value)
+      yield JSON.parse(decodedValue)
+    } catch (e) {
+      console.warn('Error parsing chunk:', e)
+    }
+  }
+}
 
 export default function Component() {
   const [whales, setWhales] = useState<Transaction[]>([])
   const [transactions, setTransactions] = useState<Transaction[]>([])
   const lastYPosition = useRef(10)
-  const pollingInterval = 5000 // 5 seconds
   const [isPanelOpen, setIsPanelOpen] = useState(false)
+  const fetchPrice = usePriceStore((state) => state.fetchPrice)
+  const prices = usePriceStore((state) => state.prices)
+  const delayCallPrice = 5 * 60 * 1000 // 5 minutes in milliseconds
+
+  const tokenAddress = '0x6982508145454ce325ddbe47a25d4ec3d2311933'
 
   const removeWhale = useCallback((id: number) => {
     setWhales((prevWhales) => prevWhales.filter((whale) => whale.id !== id))
@@ -29,67 +52,131 @@ export default function Component() {
     return newY
   }, [])
 
-  const fetchTransactions = useCallback(async () => {
+  const fetchTransactionsRef = useCallback(async () => {
     try {
-      const response = await fetch('/api/transactions', {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      })
+      const stream = streamingFetch()
 
-      if (!response.ok) throw new Error('Network response was not ok')
-
-      const webhookData = (await response.json()) as TransactionWebhookData
-
-      if (webhookData.erc20Transfers && webhookData.erc20Transfers.length > 0) {
-        const newTransactions: Transaction[] = webhookData.erc20Transfers.map(
-          (transfer, index) => ({
-            id: Date.now() + index,
-            amount: parseFloat(transfer.valueWithDecimals),
-            timestamp: new Date(parseInt(webhookData.block.timestamp) * 1000),
-            sender: transfer.from,
-            receiver: transfer.to,
-            tokenName: transfer.tokenName,
-            tokenSymbol: transfer.tokenSymbol,
-            transactionHash: transfer.transactionHash,
-            yPosition: generateNewYPosition(),
-          })
-        )
-
-        // Filter out duplicates based on transactionHash
-        const uniqueTransactions = newTransactions
-        .filter(
-          (newTx) =>
-            !whales.some(
-              (whale) => whale.transactionHash === newTx.transactionHash
-            ) &&
-            !transactions.some(
-              (tx) => tx.transactionHash === newTx.transactionHash
-            )
-        )
-
-        uniqueTransactions.forEach((transaction) => {
-          setWhales((prevWhales) => [...prevWhales, transaction])
-          setTransactions((prevTransactions) =>
-            [transaction, ...prevTransactions].slice(0, 10)
+      for await (const webhookData of stream) {
+        if (
+          webhookData.erc20Transfers &&
+          webhookData.erc20Transfers.length > 0
+        ) {
+          const tokenPrice = prices[tokenAddress] || 0
+         
+          const newTransactions: Transaction[] = webhookData.erc20Transfers.map(
+            (transfer: any, index: number) => ({
+              id: Date.now() + index,
+              amount: parseFloat(transfer.valueWithDecimals),
+              usdValue: tokenPrice * parseFloat(transfer.valueWithDecimals),
+              timestamp: new Date(parseInt(webhookData.block.timestamp) * 1000),
+              sender: transfer.from,
+              receiver: transfer.to,
+              tokenName: transfer.tokenName,
+              tokenSymbol: transfer.tokenSymbol,
+              transactionHash: transfer.transactionHash,
+              contractAddress: transfer.contractAddress,
+              yPosition: generateNewYPosition(),
+            })
           )
-        })
+
+          const uniqueTransactions = newTransactions.filter((newTx) => {
+            const isDuplicate =
+              whales.some(
+                (whale) => whale.transactionHash === newTx.transactionHash
+              ) ||
+              transactions.some(
+                (tx) => tx.transactionHash === newTx.transactionHash
+              )
+            return !isDuplicate
+          })
+
+          if (uniqueTransactions.length > 0) {
+            try {
+              
+
+              setWhales((prevWhales) => {
+                const newWhales = [...prevWhales]
+                uniqueTransactions.forEach((tx) => {
+                  if (
+                    !newWhales.some(
+                      (whale) => whale.transactionHash === tx.transactionHash
+                    )
+                  ) {
+                    newWhales.push(tx)
+                  }
+                })
+                return newWhales
+              })
+
+              setTransactions((prevTransactions) => {
+                const newTransactions = [
+                  ...uniqueTransactions,
+                  ...prevTransactions,
+                ]
+                const uniqueTransactionsMapped = Array.from(
+                  new Map(
+                    newTransactions.map((tx) => [tx.transactionHash, tx])
+                  ).values()
+                )
+                return uniqueTransactionsMapped.slice(0, 10)
+              })
+            } catch (error) {
+              setWhales((prevWhales) => {
+                const newWhales = [...prevWhales]
+                uniqueTransactions.forEach((tx) => {
+                  if (
+                    !newWhales.some(
+                      (whale) => whale.transactionHash === tx.transactionHash
+                    )
+                  ) {
+                    newWhales.push(tx)
+                  }
+                })
+                return newWhales
+              })
+
+              setTransactions((prevTransactions) => {
+                const newTransactions = [
+                  ...uniqueTransactions,
+                  ...prevTransactions,
+                ]
+                const uniqueTransactio = Array.from(
+                  new Map(
+                    newTransactions.map((tx) => [tx.transactionHash, tx])
+                  ).values()
+                )
+                return uniqueTransactio.slice(0, 10)
+              })
+            }
+          }
+        }
       }
     } catch (error) {
       console.error('Error fetching transactions:', error)
     }
-  }, [generateNewYPosition, whales, transactions])
+  }, [prices])
 
   useEffect(() => {
-    fetchTransactions()
+    fetchPrice(tokenAddress)
 
-    const intervalId = setInterval(fetchTransactions, pollingInterval)
+    const intervalId = setInterval(() => {
+      fetchPrice(tokenAddress)
+    }, delayCallPrice) 
+
+    return () => clearInterval(intervalId)
+  }, [fetchPrice, delayCallPrice])
+
+  useEffect(() => {
+    const controller = new AbortController()
+
+    if (prices[tokenAddress]) {
+      fetchTransactionsRef()
+    }
 
     return () => {
-      clearInterval(intervalId)
+      controller.abort()
     }
-  }, [fetchTransactions])
+  }, [prices, fetchTransactionsRef])
 
   return (
     <div className='relative h-screen w-full overflow-hidden bg-gradient-to-b from-blue-200 to-blue-400'>
@@ -105,7 +192,7 @@ export default function Component() {
       <TransactionPanel isPanelOpen={isPanelOpen} />
 
       <AnimatePresence>
-      {whales.map((whale) => (
+        {whales.map((whale) => (
           <WhaleComponent
             key={whale.id}
             transaction={whale}

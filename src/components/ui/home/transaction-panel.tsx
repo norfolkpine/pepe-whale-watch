@@ -44,9 +44,12 @@ export function TransactionPanel({ isPanelOpen }: TransactionPanelProps) {
               </TableHeader>
               <TableBody>
                 {transactions.map((transaction) => (
-                  <TableRow key={transaction.id} className="hover:bg-gray-50">
+                  <TableRow 
+                    key={`${transaction.id}-${transaction.sender}-${transaction.receiver}`} 
+                    className="hover:bg-gray-50"
+                  >
                     <TableCell className="py-2 text-black">
-                      {transaction.amount.toLocaleString()} {transaction.tokenSymbol}
+                      {transaction.amount} {transaction.tokenSymbol}
                     </TableCell>
                     <TableCell 
                       className="py-2 text-black cursor-pointer hover:text-blue-500"
