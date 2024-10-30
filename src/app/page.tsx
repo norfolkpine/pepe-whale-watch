@@ -2,25 +2,27 @@
 
 import { useState, useCallback, useEffect, useRef } from 'react'
 import { AnimatePresence } from 'framer-motion'
-import { Transaction } from '@/types/types'
+import { Transaction, TransactionWebhookData } from '@/types/types'
 import { PanelToggleButton } from '@/components/widgets/home/panel-toggle-button'
 import { TransactionPanel } from '@/components/ui/home/transaction-panel'
 import { WhaleComponent } from '@/components/widgets/home/whale-component'
 import TransactionTable from '@/components/widgets/home/transaction-table'
-import { usePriceStore } from '@/store/usePriceStore'
-import { useInterval } from '@/hooks/useInterval'
+import { usePriceStore } from '@/store/usePriceStore';
 
 export default function Component() {
   const [whales, setWhales] = useState<Transaction[]>([])
   const [transactions, setTransactions] = useState<Transaction[]>([])
   const lastYPosition = useRef(10)
+  const pollingInterval = 500 // 5 seconds
   const [isPanelOpen, setIsPanelOpen] = useState(false)
   const fetchPrice = usePriceStore((state) => state.fetchPrice)
   const prices = usePriceStore((state) => state.prices)
   const delayCallPrice = 5 * 60 * 1000
   const tokenAddress = '0x6982508145454ce325ddbe47a25d4ec3d2311933'
-  const [lastTimestamp, setLastTimestamp] = useState(0)
 
+  const removeWhale = useCallback((id: number) => {
+    setWhales((prevWhales) => prevWhales.filter((whale) => whale.id !== id))
+  }, [])
 
   const generateNewYPosition = useCallback(() => {
     const minDistance = 20
@@ -32,96 +34,85 @@ export default function Component() {
     return newY
   }, [])
 
-
-  const processTransactions = useCallback((webhookData: any) => {
-    if (webhookData.erc20Transfers && webhookData.erc20Transfers.length > 0) {
-      const tokenPrice = prices[tokenAddress] || 0
-      
-      const newTransactions: Transaction[] = webhookData.erc20Transfers.map(
-        (transfer: any, index: number) => ({
-          id: Date.now() + index,
-          amount: parseFloat(transfer.valueWithDecimals),
-          usdValue: tokenPrice * parseFloat(transfer.valueWithDecimals),
-          timestamp: new Date(parseInt(webhookData.block.timestamp) * 1000),
-          sender: transfer.from,
-          receiver: transfer.to,
-          tokenName: transfer.tokenName,
-          tokenSymbol: transfer.tokenSymbol,
-          transactionHash: transfer.transactionHash,
-          contractAddress: transfer.contractAddress,
-          yPosition: generateNewYPosition(),
-        })
-      )
-
-      const uniqueTransactions = newTransactions.filter((newTx) => {
-        const isDuplicate =
-          whales.some((whale) => whale.transactionHash === newTx.transactionHash) ||
-          transactions.some((tx) => tx.transactionHash === newTx.transactionHash)
-        return !isDuplicate
-      })
-
-      if (uniqueTransactions.length > 0) {
-        setWhales((prevWhales) => {
-          const newWhales = [...prevWhales]
-          uniqueTransactions.forEach((tx) => {
-            if (!newWhales.some((whale) => whale.transactionHash === tx.transactionHash)) {
-              newWhales.push(tx)
-            }
-          })
-          return newWhales
-        })
-
-        setTransactions((prevTransactions) => {
-          const newTransactions = [...uniqueTransactions, ...prevTransactions]
-          const uniqueTransactionsMapped = Array.from(
-            new Map(newTransactions.map((tx) => [tx.transactionHash, tx])).values()
-          )
-          return uniqueTransactionsMapped.slice(0, 10)
-        })
-      }
-    }
-  }, [prices, tokenAddress, whales, transactions, generateNewYPosition])
-
-
   const fetchTransactions = useCallback(async () => {
     try {
-      const response = await fetch('/api/transactions');
-      const { data, timestamp } = await response.json();
-      
-      if (data && timestamp > lastTimestamp) {
-        setLastTimestamp(timestamp);
-        processTransactions(data);
+      const response = await fetch('/api/transactions', {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      })
+
+      if (!response.ok) throw new Error('Network response was not ok')
+
+      const webhookData = (await response.json()) as TransactionWebhookData
+
+      if (webhookData.erc20Transfers && webhookData.erc20Transfers.length > 0) {
+        const tokenPrice = prices[tokenAddress] || 0
+
+        const newTransactions: Transaction[] = webhookData.erc20Transfers.map(
+          (transfer, index) => ({
+            id: Date.now() + index,
+            amount: parseFloat(transfer.valueWithDecimals),
+            timestamp: new Date(parseInt(webhookData.block.timestamp) * 1000),
+            sender: transfer.from,
+            receiver: transfer.to,
+            tokenName: transfer.tokenName,
+            tokenSymbol: transfer.tokenSymbol,
+            transactionHash: transfer.transactionHash,
+            yPosition: generateNewYPosition(),
+            usdValue: tokenPrice * parseFloat(transfer.valueWithDecimals),
+          })
+        )
+
+        // Filter out duplicates based on transactionHash
+        const uniqueTransactions = newTransactions
+          .filter(
+            (newTx) =>
+              !whales.some(
+                (whale) => whale.transactionHash === newTx.transactionHash
+              ) &&
+              !transactions.some(
+                (tx) => tx.transactionHash === newTx.transactionHash
+              )
+          )
+
+        uniqueTransactions.forEach((transaction) => {
+          setWhales((prevWhales) => [...prevWhales, transaction])
+          setTransactions((prevTransactions) =>
+            [transaction, ...prevTransactions].slice(0, 10)
+          )
+        })
       }
     } catch (error) {
-      console.error('Error fetching transactions:', error);
+      console.error('Error fetching transactions:', error)
     }
-  }, [lastTimestamp, processTransactions]);
+  }, [generateNewYPosition, whales, transactions])
 
-  const removeWhale = useCallback((id: number) => {
-    setWhales((prevWhales) => prevWhales.filter((whale) => whale.id !== id))
-  }, [])
-
-  
-  useEffect(() => {
-    fetchPrice(tokenAddress);
-  }, [fetchPrice])
 
   useEffect(() => {
     if (prices[tokenAddress]) {
-      // Initial fetch
-      fetchTransactions();
-      
-      const transactionInterval = setInterval(fetchTransactions, 3000); // Poll every 3 seconds
+      fetchPrice(tokenAddress);
       const priceInterval = setInterval(() => {
         fetchPrice(tokenAddress);
       }, delayCallPrice);
 
       return () => {
-        clearInterval(transactionInterval);
         clearInterval(priceInterval);
       };
     }
-  }, [fetchTransactions, fetchPrice, delayCallPrice, prices]);
+  }, [fetchPrice, delayCallPrice, prices]);
+
+  useEffect(() => {
+    fetchTransactions()
+
+    const intervalId = setInterval(fetchTransactions, pollingInterval)
+
+    return () => {
+      clearInterval(intervalId)
+    }
+  }, [fetchTransactions])
+
 
   return (
     <div className='relative h-screen w-full overflow-hidden bg-gradient-to-b from-blue-200 to-blue-400'>
