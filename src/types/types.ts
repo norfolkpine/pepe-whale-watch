@@ -6,6 +6,7 @@ export interface ERC20Transfer {
 	tokenName: string
 	tokenSymbol: string
 	valueWithDecimals: string
+	contractAddress?: string
 }
 
 export interface TransactionWebhookData {
@@ -29,6 +30,7 @@ export interface Transaction {
   receiver: string;
   tokenName: string;
   tokenSymbol: string;
+  usdValue: number;
   transactionHash: string;
   yPosition: number;
 }
