@@ -40,6 +40,7 @@ export const useTransactionStore = create<TransactionStore>((set) => ({
         transactionHash: tx.transaction_hash,
         yPosition: 0,
         tokenName: tx.token_name,
+        usdValue: 0,
       }));
 
       set({ transactions: formattedTransactions, isLoading: false });
