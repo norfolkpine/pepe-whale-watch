@@ -8,7 +8,7 @@ import { TransactionPanel } from '@/components/ui/home/transaction-panel'
 import { WhaleComponent } from '@/components/widgets/home/whale-component'
 import TransactionTable from '@/components/widgets/home/transaction-table'
 import { usePriceStore } from '@/store/usePriceStore'
-import { useSSE } from '@/hooks/useSSE'
+import { useInterval } from '@/hooks/useInterval'
 
 export default function Component() {
   const [whales, setWhales] = useState<Transaction[]>([])
@@ -16,16 +16,11 @@ export default function Component() {
   const lastYPosition = useRef(10)
   const [isPanelOpen, setIsPanelOpen] = useState(false)
   const fetchPrice = usePriceStore((state) => state.fetchPrice)
-  const loadingPrice = usePriceStore((state) => state.isLoading)
   const prices = usePriceStore((state) => state.prices)
   const delayCallPrice = 5 * 60 * 1000
   const tokenAddress = '0x6982508145454ce325ddbe47a25d4ec3d2311933'
+  const [lastTimestamp, setLastTimestamp] = useState(0)
 
-  const connectSSE = useSSE('/api/transactions')
-
-  const removeWhale = useCallback((id: number) => {
-    setWhales((prevWhales) => prevWhales.filter((whale) => whale.id !== id))
-  }, [])
 
   const generateNewYPosition = useCallback(() => {
     const minDistance = 20
@@ -36,6 +31,7 @@ export default function Component() {
     lastYPosition.current = newY
     return newY
   }, [])
+
 
   const processTransactions = useCallback((webhookData: any) => {
     if (webhookData.erc20Transfers && webhookData.erc20Transfers.length > 0) {
@@ -86,37 +82,46 @@ export default function Component() {
     }
   }, [prices, tokenAddress, whales, transactions, generateNewYPosition])
 
+
+  const fetchTransactions = useCallback(async () => {
+    try {
+      const response = await fetch('/api/transactions');
+      const { data, timestamp } = await response.json();
+      
+      if (data && timestamp > lastTimestamp) {
+        setLastTimestamp(timestamp);
+        processTransactions(data);
+      }
+    } catch (error) {
+      console.error('Error fetching transactions:', error);
+    }
+  }, [lastTimestamp, processTransactions]);
+
+  const removeWhale = useCallback((id: number) => {
+    setWhales((prevWhales) => prevWhales.filter((whale) => whale.id !== id))
+  }, [])
+
+  
   useEffect(() => {
     fetchPrice(tokenAddress);
   }, [fetchPrice])
 
   useEffect(() => {
-   if(prices[tokenAddress]){
-    const sse = connectSSE();
+    if (prices[tokenAddress]) {
+      // Initial fetch
+      fetchTransactions();
+      
+      const transactionInterval = setInterval(fetchTransactions, 3000); // Poll every 3 seconds
+      const priceInterval = setInterval(() => {
+        fetchPrice(tokenAddress);
+      }, delayCallPrice);
 
-    sse.onmessage = (event) => {
-      try {
-        const data = event.data;
-        if (data.startsWith('{') && data.endsWith('}')) {
-          const webhookData = JSON.parse(data);
-          processTransactions(webhookData);
-        }
-      } catch (error) {
-        console.error('Error processing SSE message:', error);
-      }
-    };
-
-    
-    const priceInterval = setInterval(() => {
-      fetchPrice(tokenAddress);
-    }, delayCallPrice);
-
-    return () => {
-      clearInterval(priceInterval);
-      sse.close();
-    };
+      return () => {
+        clearInterval(transactionInterval);
+        clearInterval(priceInterval);
+      };
     }
-  }, [connectSSE, fetchPrice, delayCallPrice, processTransactions, prices]);
+  }, [fetchTransactions, fetchPrice, delayCallPrice, prices]);
 
   return (
     <div className='relative h-screen w-full overflow-hidden bg-gradient-to-b from-blue-200 to-blue-400'>
