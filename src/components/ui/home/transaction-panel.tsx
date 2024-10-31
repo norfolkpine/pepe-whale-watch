@@ -24,12 +24,12 @@ export function TransactionPanel({ isPanelOpen }: TransactionPanelProps) {
 
   return (
     <div
-      className={`fixed right-0 top-0 h-full w-[600px] bg-white shadow-lg transform transition-transform duration-300 ease-in-out z-20 ${
+      className={`fixed right-0 top-0 h-full w-full sm:w-[80%] md:w-[70%] lg:w-[600px] bg-white shadow-lg transform transition-transform duration-300 ease-in-out z-20 ${
         isPanelOpen ? 'translate-x-0' : 'translate-x-full'
       }`}
     >
-      <div className="p-4 h-full overflow-y-auto">
-        <h2 className="text-lg font-semibold mb-1">Transaction History</h2>
+      <div className="p-2 sm:p-4 h-full overflow-y-auto">
+        <h2 className="text-base sm:text-lg font-semibold mb-1">Transaction History</h2>
         {isLoading ? (
           <div className="flex justify-center items-center h-40">
             <Loader2 className="h-6 w-6 animate-spin" />
@@ -38,13 +38,13 @@ export function TransactionPanel({ isPanelOpen }: TransactionPanelProps) {
           <div className="text-red-500 text-sm">{error}</div>
         ) : (
           <div className="space-y-2">
-            <Table className="w-full text-xs">
+            <Table className="w-full text-[10px] sm:text-xs">
               <TableHeader>
                 <TableRow className='border-none'>
-                  <TableHead className="py-1 h-8">Amount</TableHead>
-                  <TableHead className="py-1 h-8">From</TableHead>
-                  <TableHead className="py-1 h-8">To</TableHead>
-                  <TableHead className="py-1 h-8">Tx Hash</TableHead>
+                  <TableHead className="py-1 h-6 sm:h-8">Amount</TableHead>
+                  <TableHead className="py-1 h-6 sm:h-8">From</TableHead>
+                  <TableHead className="py-1 h-6 sm:h-8">To</TableHead>
+                  <TableHead className="py-1 h-6 sm:h-8">Tx Hash</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -53,23 +53,34 @@ export function TransactionPanel({ isPanelOpen }: TransactionPanelProps) {
                     key={`${transaction.from_address}-${transaction.to_address}-${index}`} 
                     className="hover:bg-gray-50"
                   >
-                    <TableCell className="py-2 text-black">
-                      {transaction.value_decimal.toLocaleString().split(",")[0]} {transaction.token_symbol}
+                    <TableCell className="py-1 sm:py-2 text-black">
+                      <span className="block truncate">
+                        {transaction.value_decimal.toLocaleString().split(",")[0]} {transaction.token_symbol}
+                      </span>
                     </TableCell>
                     <TableCell 
-                      className="py-2 text-black cursor-pointer hover:text-blue-500 underline"
+                      className="py-1 sm:py-2 text-black cursor-pointer hover:text-blue-500 underline"
                       onClick={() => handleAddressClick(transaction.from_address)}
                     >
-                      {transaction.from_address.slice(0, 6)}...{transaction.from_address.slice(-4)}
+                      <span className="block truncate">
+                        {transaction.from_address.slice(0, 4)}...{transaction.from_address.slice(-4)}
+                      </span>
                     </TableCell>
                     <TableCell 
-                      className="py-2 text-black cursor-pointer hover:text-blue-500 underline"
+                      className="py-1 sm:py-2 text-black cursor-pointer hover:text-blue-500 underline"
                       onClick={() => handleAddressClick(transaction.to_address)}
                     >
-                      {transaction.to_address.slice(0, 6)}...{transaction.to_address.slice(-4)}
+                      <span className="block truncate">
+                        {transaction.to_address.slice(0, 4)}...{transaction.to_address.slice(-4)}
+                      </span>
                     </TableCell>
-                    <TableCell className="py-2 text-black hover:text-blue-500 underline" onClick={() => handleTxClick(transaction.transaction_hash)} >
-                      {transaction.transaction_hash.slice(0, 6)}...{transaction.transaction_hash.slice(-4)}
+                    <TableCell 
+                      className="py-1 sm:py-2 text-black hover:text-blue-500 underline"
+                      onClick={() => handleTxClick(transaction.transaction_hash)}
+                    >
+                      <span className="block truncate">
+                        {transaction.transaction_hash.slice(0, 4)}...{transaction.transaction_hash.slice(-4)}
+                      </span>
                     </TableCell>
                   </TableRow>
                 ))}

@@ -87,31 +87,32 @@ export default function Component() {
     } catch (error) {
       console.error('Error fetching transactions:', error)
     }
-  }, [generateNewYPosition, whales, transactions])
+  }, [generateNewYPosition, whales, transactions, prices])
 
+
+  useEffect(() => {
+    fetchPrice(tokenAddress);
+
+    const priceInterval = setInterval(() => {
+      fetchPrice(tokenAddress);
+    }, delayCallPrice);
+
+    return () => {
+      clearInterval(priceInterval);
+    };
+  }, [fetchPrice, delayCallPrice]);
 
   useEffect(() => {
     if (prices[tokenAddress]) {
-      fetchPrice(tokenAddress);
-      const priceInterval = setInterval(() => {
-        fetchPrice(tokenAddress);
-      }, delayCallPrice);
+      fetchTransactions();
+
+      const intervalId = setInterval(fetchTransactions, pollingInterval);
 
       return () => {
-        clearInterval(priceInterval);
+        clearInterval(intervalId);
       };
     }
-  }, [fetchPrice, delayCallPrice, prices]);
-
-  useEffect(() => {
-    fetchTransactions()
-
-    const intervalId = setInterval(fetchTransactions, pollingInterval)
-
-    return () => {
-      clearInterval(intervalId)
-    }
-  }, [fetchTransactions])
+  }, [fetchTransactions, prices, tokenAddress]);
 
 
   return (
