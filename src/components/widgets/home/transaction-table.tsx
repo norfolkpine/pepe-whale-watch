@@ -2,6 +2,7 @@ import { Table, TableRow, TableBody, TableCell, TableHead, TableHeader } from "@
 import { Transaction } from "@/types/types";
 import { useState } from "react";
 import { ChevronUp, ChevronDown } from "lucide-react";
+import { formatCurrency, formatNumber } from "@/lib/utils";
 
 export default function TransactionTable({ transactions }: { transactions: Transaction[] }) {
     const [isMinimized, setIsMinimized] = useState(false);
@@ -45,11 +46,14 @@ export default function TransactionTable({ transactions }: { transactions: Trans
                         .map((transaction) => (
                             <TableRow key={transaction.id}>
                                 <TableCell className='py-1 text-black'>
-                                    {transaction.amount.toLocaleString().split(",")[0]}{' '}
+                                    {formatNumber(transaction.amount.toString().split(".")[0])}{' '}
                                     {transaction.tokenSymbol}
                                 </TableCell>
                                 <TableCell className='py-1 text-black'>
-                                    ${transaction.usdValue.toLocaleString()}
+                                    ${transaction.usdValue.toLocaleString(undefined, {
+                                        maximumFractionDigits: 2,
+                                        useGrouping: true
+                                    })}
                                 </TableCell>
                                 <TableCell className='py-1 text-black'>
                                     {transaction.tokenName}

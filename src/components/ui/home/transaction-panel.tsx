@@ -1,4 +1,5 @@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { formatNumber } from "@/lib/utils";
 import { useTransactionStore } from '@/store/useTransactionStore'
 import { Loader2 } from "lucide-react"
 import { useEffect } from "react";
@@ -21,6 +22,7 @@ export function TransactionPanel({ isPanelOpen }: TransactionPanelProps) {
   const handleTxClick = (txHash: string) => {
     window.open(`https://etherscan.io/tx/${txHash}`, '_blank');
   };
+
 
   return (
     <div
@@ -55,7 +57,7 @@ export function TransactionPanel({ isPanelOpen }: TransactionPanelProps) {
                   >
                     <TableCell className="py-1 sm:py-2 text-black">
                       <span className="block truncate">
-                        {transaction.value_decimal.toLocaleString().split(",")[0]} {transaction.token_symbol}
+                        {formatNumber(transaction.value_decimal.split(".")[0])} {transaction.token_symbol}
                       </span>
                     </TableCell>
                     <TableCell 
