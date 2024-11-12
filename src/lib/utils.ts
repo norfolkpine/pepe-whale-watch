@@ -11,6 +11,14 @@ export function delay(ms = 1000) {
   }
 }
 
+export  const formatNumber = (inputNumber: string) => {
+  const number = Number(inputNumber);
+  return number.toLocaleString('en-US', {
+    maximumFractionDigits: 0,
+    useGrouping: true
+  }).replace(/,/g, '.');
+};
+
 export const formatCurrency = (value: number, useShortForm: boolean = true) => {
   const options: Intl.NumberFormatOptions = {
     style: 'currency',
