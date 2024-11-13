@@ -76,7 +76,7 @@ export default function TransactionTable({ transactions }: { transactions: Trans
                                     {transaction.tokenSymbol}
                                 </TableCell>
                                 <TableCell className='py-1 text-black'>
-                                    ${transaction.usdValue.toLocaleString(undefined, {
+                                    ${transaction.usdValue.toLocaleString("en-US", {
                                         maximumFractionDigits: 2,
                                         useGrouping: true
                                     })}
