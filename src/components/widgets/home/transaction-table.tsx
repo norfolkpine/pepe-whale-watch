@@ -52,7 +52,7 @@ export default function TransactionTable({
             <TableHead className='h-8 py-1'>Tx Hash</TableHead>
           </TableRow>
         </TableHeader>
-        <TableBody className='max-h-[200px] overflow-y-auto'>
+        <TableBody className='max-h-[200px] xl:max-h-[400px] 2xl:max-h-[600px] overflow-y-auto'>
           {visibleTransactions.map((transaction) => (
             <TableRow key={transaction.id}>
               <TableCell className='py-1 text-black'>
