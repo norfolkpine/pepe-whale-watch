@@ -64,7 +64,5 @@ export interface TokenTransferDetails {
 
 export type AddressData = {
   address: string;
-  chainId: string;
-  label: string;
   nameTag: string;
 };
