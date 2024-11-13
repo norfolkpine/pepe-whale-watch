@@ -16,7 +16,7 @@ export  const formatNumber = (inputNumber: string) => {
   return number.toLocaleString('en-US', {
     maximumFractionDigits: 0,
     useGrouping: true
-  }).replace(/,/g, '.');
+  });
 };
 
 export const formatCurrency = (value: number, useShortForm: boolean = true) => {

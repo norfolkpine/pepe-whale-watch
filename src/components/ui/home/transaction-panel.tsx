@@ -1,8 +1,9 @@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { formatNumber } from "@/lib/utils";
 import { useTransactionStore } from '@/store/useTransactionStore'
+import { AddressData } from "@/types/types";
 import { Loader2 } from "lucide-react"
-import { useEffect } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 
 interface TransactionPanelProps {
   isPanelOpen: boolean;
@@ -10,19 +11,85 @@ interface TransactionPanelProps {
 
 export function TransactionPanel({ isPanelOpen }: TransactionPanelProps) {
   const { fetchTransactions, transactions, isLoading, error } = useTransactionStore();
+  const [addressData, setAddressData] = useState<AddressData[]>([]);
 
   useEffect(() => {
-    fetchTransactions("0x6982508145454ce325ddbe47a25d4ec3d2311933")
-  }, [])
+    const loadData = async () => {
+      try {
+        await fetchTransactions("0x6982508145454ce325ddbe47a25d4ec3d2311933");
+        
+        const response = await fetch('sample/accounts.csv');
+        const csvText = await response.text();
+        const rows = csvText.split('\n').slice(1);
+        const parsed = rows.map(row => {
+          const [address, chainId, label, nameTag] = row.split(',');
+          return { 
+            address: address.toLowerCase().trim(),
+            chainId, 
+            label, 
+            nameTag: nameTag?.replace(/['"]/g, '')
+          };
+        });
+        setAddressData(parsed);
+      } catch (error) {
+        console.error('Error loading data:', error);
+      }
+    };
+    loadData();
+  }, [fetchTransactions]);
 
-  const handleAddressClick = (address: string) => {
+  const getNameTag = useCallback((address: string) => {
+    const normalizedAddress = address.toLowerCase().trim();
+    const data = addressData.find(d => d.address === normalizedAddress);
+    return data?.nameTag || `${address.slice(0, 6)}...${address.slice(-4)}`;
+  }, [addressData]);
+
+  const handleAddressClick = useCallback((address: string) => {
     window.open(`https://etherscan.io/address/${address}`, '_blank');
-  };
+  }, []);
 
-  const handleTxClick = (txHash: string) => {
+  const handleTxClick = useCallback((txHash: string) => {
     window.open(`https://etherscan.io/tx/${txHash}`, '_blank');
-  };
+  }, []);
 
+  const transactionRows = useMemo(() => (
+    transactions.map((transaction, index) => (
+      <TableRow 
+        key={`${transaction.transaction_hash}-${index}`}
+        className="hover:bg-gray-50"
+      >
+        <TableCell className="py-1 sm:py-2 text-black">
+          <span className="block truncate">
+            {formatNumber(transaction.value_decimal.split(".")[0])} {transaction.token_symbol}
+          </span>
+        </TableCell>
+        <TableCell 
+          className="py-1 sm:py-2 text-black cursor-pointer hover:text-blue-500 underline"
+          onClick={() => handleAddressClick(transaction.from_address)}
+        >
+          <span className="block truncate">
+            {getNameTag(transaction.from_address)}
+          </span>
+        </TableCell>
+        <TableCell 
+          className="py-1 sm:py-2 text-black cursor-pointer hover:text-blue-500 underline"
+          onClick={() => handleAddressClick(transaction.to_address)}
+        >
+          <span className="block truncate">
+            {getNameTag(transaction.to_address)}
+          </span>
+        </TableCell>
+        <TableCell 
+          className="py-1 sm:py-2 text-black hover:text-blue-500 underline"
+          onClick={() => handleTxClick(transaction.transaction_hash)}
+        >
+          <span className="block truncate">
+            {transaction.transaction_hash.slice(0, 4)}...{transaction.transaction_hash.slice(-4)}
+          </span>
+        </TableCell>
+      </TableRow>
+    ))
+  ), [transactions, getNameTag, handleAddressClick, handleTxClick]);
 
   return (
     <div
@@ -50,42 +117,7 @@ export function TransactionPanel({ isPanelOpen }: TransactionPanelProps) {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {transactions.map((transaction, index) => (
-                  <TableRow 
-                    key={`${transaction.from_address}-${transaction.to_address}-${index}`} 
-                    className="hover:bg-gray-50"
-                  >
-                    <TableCell className="py-1 sm:py-2 text-black">
-                      <span className="block truncate">
-                        {formatNumber(transaction.value_decimal.split(".")[0])} {transaction.token_symbol}
-                      </span>
-                    </TableCell>
-                    <TableCell 
-                      className="py-1 sm:py-2 text-black cursor-pointer hover:text-blue-500 underline"
-                      onClick={() => handleAddressClick(transaction.from_address)}
-                    >
-                      <span className="block truncate">
-                        {transaction.from_address.slice(0, 4)}...{transaction.from_address.slice(-4)}
-                      </span>
-                    </TableCell>
-                    <TableCell 
-                      className="py-1 sm:py-2 text-black cursor-pointer hover:text-blue-500 underline"
-                      onClick={() => handleAddressClick(transaction.to_address)}
-                    >
-                      <span className="block truncate">
-                        {transaction.to_address.slice(0, 4)}...{transaction.to_address.slice(-4)}
-                      </span>
-                    </TableCell>
-                    <TableCell 
-                      className="py-1 sm:py-2 text-black hover:text-blue-500 underline"
-                      onClick={() => handleTxClick(transaction.transaction_hash)}
-                    >
-                      <span className="block truncate">
-                        {transaction.transaction_hash.slice(0, 4)}...{transaction.transaction_hash.slice(-4)}
-                      </span>
-                    </TableCell>
-                  </TableRow>
-                ))}
+                {transactionRows}
               </TableBody>
             </Table>
           </div>

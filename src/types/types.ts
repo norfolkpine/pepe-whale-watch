@@ -61,3 +61,10 @@ export interface TokenTransferDetails {
   verified_contract: boolean;
   security_score: number;
 }
+
+export type AddressData = {
+  address: string;
+  chainId: string;
+  label: string;
+  nameTag: string;
+};
