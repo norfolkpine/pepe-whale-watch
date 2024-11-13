@@ -1,20 +1,46 @@
 import { Table, TableRow, TableBody, TableCell, TableHead, TableHeader } from "@/components/ui/table";
-import { Transaction } from "@/types/types";
-import { useState } from "react";
+import { AddressData, Transaction } from "@/types/types";
+import { useState, useEffect } from "react";
 import { ChevronUp, ChevronDown } from "lucide-react";
-import { formatCurrency, formatNumber } from "@/lib/utils";
+import { formatNumber } from "@/lib/utils";
+
 
 export default function TransactionTable({ transactions }: { transactions: Transaction[] }) {
     const [isMinimized, setIsMinimized] = useState(false);
+    const [addressData, setAddressData] = useState<AddressData[]>([]);
+
+    useEffect(() => {
+        const loadAddressData = async () => {
+            try {
+                const response = await fetch('sample/accounts.csv');
+                const csvText = await response.text();
+                const rows = csvText.split('\n').slice(1); // Skip header
+                const parsed = rows.map(row => {
+                    const [address, chainId, label, nameTag] = row.split(',');
+                    return { address, chainId, label, nameTag };
+                });
+                setAddressData(parsed);
+            } catch (error) {
+                console.error('Error loading CSV:', error);
+            }
+        };
+        loadAddressData();
+    }, []);
+
+    const getNameTag = (address: string) => {
+        const data = addressData.find(d => {
+            const cleanAddress = d.address.replace(/['"]/g, '').trim().toLowerCase();
+            return cleanAddress === address.trim().toLowerCase();
+        });
+        console.log(data);
+        return data?.nameTag?.replace(/['"]/g, '') || `${address.slice(0, 6)}...${address.slice(-4)}`;
+    };
 
     const handleAddressClick = (address: string) => {
         window.open(`https://etherscan.io/address/${address}`, '_blank');
       };
     
-      const handleTxClick = (txHash: string) => {
-        window.open(`https://etherscan.io/tx/${txHash}`, '_blank');
-      };
-    
+
 
     return (
         <div className='absolute bottom-4 left-4 right-4 mx-auto max-w-4xl overflow-x-auto rounded-lg bg-white bg-opacity-80 p-2'>
@@ -59,12 +85,10 @@ export default function TransactionTable({ transactions }: { transactions: Trans
                                     {transaction.tokenName}
                                 </TableCell>
                                 <TableCell className='py-1 text-black hover:text-blue-600 underline' onClick={() => handleAddressClick(transaction.sender)}>
-                                    {transaction.sender.slice(0, 6)}...
-                                    {transaction.sender.slice(-4)}
+                                    {getNameTag(transaction.sender)}
                                 </TableCell>
                                 <TableCell className='py-1 text-black hover:text-blue-600 underline' onClick={() => handleAddressClick(transaction.receiver)}>
-                                    {transaction.receiver.slice(0, 6)}...
-                                    {transaction.receiver.slice(-4)}
+                                    {getNameTag(transaction.receiver)}
                                 </TableCell>
                                 <TableCell className='py-1 text-black'>
                                     {transaction.timestamp.toLocaleString()}
