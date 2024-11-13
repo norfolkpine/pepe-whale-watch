@@ -13,7 +13,6 @@ import { useTransactionStore } from '@/store/useTransactionStore'
 import { AddressData, Transaction } from '@/types/types'
 import { Loader2 } from 'lucide-react'
 import { useEffect, useState, useCallback, useMemo } from 'react'
-import { Input } from '@/components/ui/input'
 
 interface TransactionPanelProps {
   isPanelOpen: boolean
@@ -28,13 +27,9 @@ export function TransactionPanel({
     useTransactionStore()
   const prices = usePriceStore((state) => state.prices)
 
-  const [historyTransactions, setHistoryTransactions] = useState<Transaction[]>(
-    []
-  )
+  const [historyTransactions, setHistoryTransactions] = useState<Transaction[]>([])
 
   const [addressData, setAddressData] = useState<AddressData[]>([])
-
-  const [searchQuery, setSearchQuery] = useState('')
 
   const addressLookup = useMemo(() => {
     const lookup = new Map<string, string>()
@@ -88,7 +83,7 @@ export function TransactionPanel({
   useEffect(() => {
     const loadData = async () => {
       try {
-        await fetchTransactions('0x6982508145454ce325ddbe47a25d4ec3d2311933')
+        await fetchTransactions(tokenAddresses.PEPE)
       } catch (error) {
         console.error('Error loading data:', error)
       }
@@ -126,21 +121,6 @@ export function TransactionPanel({
     }
   }, [streamedTransactions])
 
-  const filteredTransactions = useMemo(() => {
-    if (!searchQuery) return historyTransactions
-    
-    const query = searchQuery.toLowerCase()
-    return historyTransactions.filter((transaction) => {
-      return (
-        transaction.amount.toString().includes(query) ||
-        transaction.usdValue.toString().includes(query) ||
-        transaction.senderName?.toLowerCase()?.includes(query) ||
-        transaction.receiverName?.toLowerCase()?.includes(query) ||
-        transaction.transactionHash.toLowerCase().includes(query) ||
-        transaction.tokenSymbol.toLowerCase().includes(query)
-      )
-    })
-  }, [historyTransactions, searchQuery])
 
   const handleAddressClick = useCallback((address: string) => {
     window.open(`https://etherscan.io/address/${address}`, '_blank')
@@ -152,7 +132,7 @@ export function TransactionPanel({
 
   const transactionRows = useMemo(
     () =>
-      filteredTransactions.map((transaction, index) => (
+      historyTransactions.map((transaction, index) => (
         <TableRow
           key={`${transaction.transactionHash}-${index}`}
           className='hover:bg-gray-50'
@@ -204,7 +184,7 @@ export function TransactionPanel({
           </TableCell>
         </TableRow>
       )),
-    [filteredTransactions, handleAddressClick, handleTxClick]
+    [historyTransactions, handleAddressClick, handleTxClick]
   )
 
   return (
@@ -217,15 +197,6 @@ export function TransactionPanel({
         <h2 className='mb-1 text-base font-semibold sm:text-lg'>
           Transaction History
         </h2>
-        <div className='mb-2'>
-          <Input
-            type="text"
-            placeholder="Search transactions..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full h-8 text-sm"
-          />
-        </div>
         {isLoading ? (
           <div className='flex h-40 items-center justify-center'>
             <Loader2 className='h-6 w-6 animate-spin' />
