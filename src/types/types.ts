@@ -27,7 +27,9 @@ export interface Transaction {
   amount: number;
   timestamp: Date;
   sender: string;
+  senderName?: string;
   receiver: string;
+  receiverName?: string;
   tokenName: string;
   tokenSymbol: string;
   usdValue: number;

@@ -1,53 +1,13 @@
 import { Table, TableRow, TableBody, TableCell, TableHead, TableHeader } from "@/components/ui/table";
-import { AddressData, Transaction } from "@/types/types";
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { Transaction } from "@/types/types";
+import { useState, useMemo } from "react";
 import { ChevronUp, ChevronDown } from "lucide-react";
 import { formatNumber } from "@/lib/utils";
 
 
 export default function TransactionTable({ transactions }: { transactions: Transaction[] }) {
     const [isMinimized, setIsMinimized] = useState(false);
-    const [addressData, setAddressData] = useState<AddressData[]>([]);
 
-    const addressLookup = useMemo(() => {
-        const lookup = new Map<string, string>();
-        addressData.forEach(data => {
-            const cleanAddress = data.address.replace(/['"]/g, '').trim().toLowerCase();
-            const cleanNameTag = data.nameTag?.replace(/['"]/g, '').trim() || '';
-            if (cleanAddress && cleanNameTag) {
-                lookup.set(cleanAddress, cleanNameTag);
-            }
-        });
-        return lookup;
-    }, [addressData]);
-
-    const getNameTag = useCallback((address: string) => {
-        const normalizedAddress = address.trim().toLowerCase();
-        return addressLookup.get(normalizedAddress) || `${address.slice(0, 6)}...${address.slice(-4)}`;
-    }, [addressLookup]);
-
-    useEffect(() => {
-        const loadAddressData = async () => {
-            try {
-                const response = await fetch('sample/accounts.csv');
-                const csvText = await response.text();
-                const rows = csvText.split('\n').slice(1);
-                const parsed = rows
-                    .filter(row => row.trim()) 
-                    .map(row => {
-                        const [address, _chainId, _label, nameTag] = row.split(',');
-                        return {
-                            address: address.replace(/['"]/g, '').trim().toLowerCase(),
-                            nameTag: nameTag?.replace(/['"]/g, '').trim()
-                        };
-                    });
-                setAddressData(parsed);
-            } catch (error) {
-                console.error('Error loading CSV:', error);
-            }   
-        };
-        loadAddressData();
-    }, []);
 
     const visibleTransactions = useMemo(() => {
         return transactions.slice(0, isMinimized ? 1 : undefined);
@@ -93,6 +53,7 @@ export default function TransactionTable({ transactions }: { transactions: Trans
                                 </TableCell>
                                 <TableCell className='py-1 text-black'>
                                     ${transaction.usdValue.toLocaleString("en-US", {
+                                        minimumFractionDigits: 2,
                                         maximumFractionDigits: 2,
                                         useGrouping: true
                                     })}
@@ -101,10 +62,10 @@ export default function TransactionTable({ transactions }: { transactions: Trans
                                     {transaction.tokenName}
                                 </TableCell>
                                 <TableCell className='py-1 text-black hover:text-blue-600 underline' onClick={() => handleAddressClick(transaction.sender)}>
-                                    {getNameTag(transaction.sender)}
+                                    {transaction.senderName ?? transaction.sender}
                                 </TableCell>
                                 <TableCell className='py-1 text-black hover:text-blue-600 underline' onClick={() => handleAddressClick(transaction.receiver)}>
-                                    {getNameTag(transaction.receiver)}
+                                    {transaction.receiverName ?? transaction.receiver}
                                 </TableCell>
                                 <TableCell className='py-1 text-black'>
                                     {transaction.timestamp.toLocaleString()}
