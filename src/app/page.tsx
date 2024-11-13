@@ -1,13 +1,14 @@
 'use client'
 
-import { useState, useCallback, useEffect, useRef } from 'react'
+import { useState, useCallback, useEffect, useRef, useMemo } from 'react'
 import { AnimatePresence } from 'framer-motion'
-import { Transaction, TransactionWebhookData } from '@/types/types'
+import { AddressData, Transaction, TransactionWebhookData } from '@/types/types'
 import { PanelToggleButton } from '@/components/widgets/home/panel-toggle-button'
 import { TransactionPanel } from '@/components/ui/home/transaction-panel'
 import { WhaleComponent } from '@/components/widgets/home/whale-component'
 import TransactionTable from '@/components/widgets/home/transaction-table'
 import { usePriceStore } from '@/store/usePriceStore';
+import { tokenAddresses } from '@/config/token-address'
 
 export default function Component() {
   const [whales, setWhales] = useState<Transaction[]>([])
@@ -18,7 +19,48 @@ export default function Component() {
   const fetchPrice = usePriceStore((state) => state.fetchPrice)
   const prices = usePriceStore((state) => state.prices)
   const delayCallPrice = 5 * 60 * 1000
-  const tokenAddress = '0x6982508145454ce325ddbe47a25d4ec3d2311933'
+
+  const [addressData, setAddressData] = useState<AddressData[]>([]);
+
+    const addressLookup = useMemo(() => {
+        const lookup = new Map<string, string>();
+        addressData.forEach(data => {
+            const cleanAddress = data.address.replace(/['"]/g, '').trim().toLowerCase();
+            const cleanNameTag = data.nameTag?.replace(/['"]/g, '').trim() || '';
+            if (cleanAddress && cleanNameTag) {
+                lookup.set(cleanAddress, cleanNameTag);
+            }
+        });
+        return lookup;
+    }, [addressData]);
+
+    const getNameTag = useCallback((address: string) => {
+        const normalizedAddress = address.trim().toLowerCase();
+        return addressLookup.get(normalizedAddress) || `${address.slice(0, 6)}...${address.slice(-4)}`;
+    }, [addressLookup]);
+
+    useEffect(() => {
+        const loadAddressData = async () => {
+            try {
+                const response = await fetch('sample/accounts.csv');
+                const csvText = await response.text();
+                const rows = csvText.split('\n').slice(1);
+                const parsed = rows
+                    .filter(row => row.trim()) 
+                    .map(row => {
+                        const [address, _chainId, _label, nameTag] = row.split(',');
+                        return {
+                            address: address.replace(/['"]/g, '').trim().toLowerCase(),
+                            nameTag: nameTag?.replace(/['"]/g, '').trim()
+                        };
+                    });
+                setAddressData(parsed);
+            } catch (error) {
+                console.error('Error loading CSV:', error);
+            }   
+        };
+        loadAddressData();
+    }, []);
 
   const removeWhale = useCallback((id: number) => {
     setWhales((prevWhales) => prevWhales.filter((whale) => whale.id !== id))
@@ -48,7 +90,7 @@ export default function Component() {
       const webhookData = (await response.json()) as TransactionWebhookData
 
       if (webhookData.erc20Transfers && webhookData.erc20Transfers.length > 0) {
-        const tokenPrice = prices[tokenAddress] || 0
+        const tokenPrice = prices[tokenAddresses.PEPE] || 0
 
         const newTransactions: Transaction[] = webhookData.erc20Transfers.map(
           (transfer, index) => ({
@@ -62,6 +104,8 @@ export default function Component() {
             transactionHash: transfer.transactionHash,
             yPosition: generateNewYPosition(),
             usdValue: tokenPrice * parseFloat(transfer.valueWithDecimals),
+            senderName: getNameTag(transfer.from),
+            receiverName: getNameTag(transfer.to),
           })
         )
 
@@ -87,14 +131,14 @@ export default function Component() {
     } catch (error) {
       console.error('Error fetching transactions:', error)
     }
-  }, [generateNewYPosition, whales, transactions, prices])
+  }, [generateNewYPosition, whales, transactions, prices, getNameTag])
 
 
   useEffect(() => {
-    fetchPrice(tokenAddress);
+    fetchPrice(tokenAddresses.PEPE);
 
     const priceInterval = setInterval(() => {
-      fetchPrice(tokenAddress);
+      fetchPrice(tokenAddresses.PEPE);
     }, delayCallPrice);
 
     return () => {
@@ -103,7 +147,7 @@ export default function Component() {
   }, [fetchPrice, delayCallPrice]);
 
   useEffect(() => {
-    if (prices[tokenAddress]) {
+    if (prices[tokenAddresses.PEPE]) {
       fetchTransactions();
 
       const intervalId = setInterval(fetchTransactions, pollingInterval);
@@ -112,7 +156,7 @@ export default function Component() {
         clearInterval(intervalId);
       };
     }
-  }, [fetchTransactions, prices, tokenAddress]);
+  }, [fetchTransactions, prices]);
 
 
   return (
@@ -126,7 +170,7 @@ export default function Component() {
         onToggle={() => setIsPanelOpen(!isPanelOpen)}
       />
 
-      <TransactionPanel isPanelOpen={isPanelOpen} />
+      <TransactionPanel isPanelOpen={isPanelOpen} transactions={transactions} />
 
       <AnimatePresence>
         {whales.map((whale) => (
