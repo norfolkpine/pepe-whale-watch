@@ -14,7 +14,7 @@ export default function Component() {
   const [whales, setWhales] = useState<Transaction[]>([])
   const [transactions, setTransactions] = useState<Transaction[]>([])
   const lastYPosition = useRef(10)
-  const pollingInterval = 500 // 5 seconds
+  const pollingInterval = 500
   const [isPanelOpen, setIsPanelOpen] = useState(false)
   const fetchPrice = usePriceStore((state) => state.fetchPrice)
   const prices = usePriceStore((state) => state.prices)
@@ -124,7 +124,7 @@ export default function Component() {
         uniqueTransactions.forEach((transaction) => {
           setWhales((prevWhales) => [...prevWhales, transaction])
           setTransactions((prevTransactions) =>
-            [transaction, ...prevTransactions].slice(0, 10)
+            [transaction, ...prevTransactions]
           )
         })
       }
